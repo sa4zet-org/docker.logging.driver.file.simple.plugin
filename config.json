@@ -1,0 +1,20 @@
+{
+  "description": "File logging driver",
+  "documentation": "https://github.com/sa4zet-org/docker.logging.driver.file.simple",
+  "entrypoint": ["/usr/bin/fileLoggingDriver"],
+  "network": {
+    "type": "host"
+  },
+  "interface": {
+    "types": ["docker.logdriver/1.0"],
+    "socket": "fileLoggingDriver.sock"
+  },
+  "mounts": [
+    {
+      "destination": "/hostRoot",
+      "type": "bind",
+      "source": "/",
+      "options": ["rbind", "rw"]
+    }
+  ]
+}
