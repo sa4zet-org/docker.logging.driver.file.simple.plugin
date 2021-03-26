@@ -1,6 +1,7 @@
 # docker.logging.driver.file.simple
 
-Logging driver for Docker that saves container raw outputs (stdout and stderr) to a configured directory on the host.
+Logging driver for Docker that saves container raw outputs (stdout and stderr) to a configured directory on the host. If the directory does not exist, the plugin creates it
+automatically.
 
 ## Install
 

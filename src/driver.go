@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	containerdFifo "github.com/containerd/fifo"
-	dockerLogDto "github.com/docker/docker/api/types/plugins/logdriver"
-	dockerDaemonLogger "github.com/docker/docker/daemon/logger"
+	containerDaemonFifo "github.com/containerd/fifo"
 	protoIo "github.com/gogo/protobuf/io"
+	dockerLogDto "github.com/moby/moby/api/types/plugins/logdriver"
+	dockerDaemonLogger "github.com/moby/moby/daemon/logger"
 	"io"
 	"os"
 	"path"
@@ -46,6 +46,7 @@ func (fileLoggingDriver *FileLoggingDriver) StopLogging(file string) error {
 		_ = fileLogger.stdOutLogFile.Close()
 		_ = fileLogger.stdErrLogFile.Close()
 		// fixing permission problem, somehow the OpenFile perm is not effective...
+		_ = os.Chmod(path.Dir(fileLogger.stdOutLogFile.Name()), 0777)
 		_ = os.Chmod(fileLogger.stdOutLogFile.Name(), 0666)
 		_ = os.Chmod(fileLogger.stdErrLogFile.Name(), 0666)
 		delete(fileLoggingDriver.loggers, path.Base(file))
@@ -68,13 +69,19 @@ func (fileLoggingDriver *FileLoggingDriver) makeFileLoggerContext(file string, d
 	}
 	fileLoggingDriver.mu.Unlock()
 
-	inputFile, err := containerdFifo.OpenFifo(context.Background(), file, syscall.O_RDONLY, 0700)
+	inputFile, err := containerDaemonFifo.OpenFifo(context.Background(), file, syscall.O_RDONLY, 0700)
 	if err != nil {
 		return nil, err
 	}
 	logFilePath := dockerDaemonLoggerInfo.ContainerName
 	if logFileDir, ok := dockerDaemonLoggerInfo.Config["log-file-dir"]; ok {
-		logFilePath = path.Join("/hostRoot", logFileDir, logFilePath)
+		logFileDirOnHost := path.Join("/hostRoot", logFileDir)
+		err = os.MkdirAll(logFileDirOnHost, 0777)
+		if err != nil {
+			return nil, err
+		}
+		logFilePath = path.Join(logFileDirOnHost, logFilePath)
+
 	} else {
 		logFilePath = path.Join("/hostRoot", "tmp", logFilePath)
 	}

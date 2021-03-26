@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	dockerDaemonLogger "github.com/docker/docker/daemon/logger"
 	dockerPluginSdk "github.com/docker/go-plugins-helpers/sdk"
+	dockerDaemonLogger "github.com/moby/moby/daemon/logger"
 	"net/http"
 )
 
