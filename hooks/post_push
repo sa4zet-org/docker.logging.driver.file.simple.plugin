@@ -1,5 +1,0 @@
-#!/bin/bash
-
-latest_tag="${DOCKER_REPO}:latest"
-docker tag "${IMAGE_NAME}" "${latest_tag}" &&
-  docker push "${latest_tag}"

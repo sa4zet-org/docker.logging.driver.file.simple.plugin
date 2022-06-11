@@ -1,0 +1,48 @@
+name: Check and build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+jobs:
+  check:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.17.11
+      - name: Go linters runner
+        uses: golangci/golangci-lint-action@v3
+        timeout-minutes: 3
+        with:
+          version: latest
+          working-directory: src
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.17.11
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: build-docker
+        run: |
+          now=$(date --utc +"%Y.%-m.%-d.%-H.%-M.%-S")
+          img_name="ghcr.io/sa4zet-org/docker.logging.driver.file.simple.plugin"
+          docker build . -t $img_name:$now
+          mkdir rootfs
+          docker export $(docker create "$img_name:$now" true) | tar -x -C rootfs
+          docker plugin create $img_name:$now .
+          docker plugin push $img_name:$now
+          docker plugin rm $img_name:$now
+          docker plugin create $img_name:latest .
+          docker plugin push $img_name:latest
